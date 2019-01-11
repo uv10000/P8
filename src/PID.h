@@ -9,6 +9,8 @@ public:
   double p_error;
   double i_error;
   double d_error;
+  double sum_of_squared_errors;
+  double prev_cte;
 
   /*
   * Coefficients

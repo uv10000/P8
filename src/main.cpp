@@ -31,9 +31,15 @@ std::string hasData(std::string s) {
 int main()
 {
   uWS::Hub h;
-
   PID pid;
   // TODO: Initialize the pid variable.
+  pid.Init(0.8,0.0004,8);  // 0.05 // (0.04,0.0001,0.1)//(0.05,0.00005,0.2)//
+  //(0.07,0.00005,0.3); (0.08,0.00003,0.5); (0.1,0.00002,0.5); (0.1,0.00002,0.7)
+  //(0.2,0.0005,4); (0.8,0.0005,8);
+  //(1.2,0.0005,16); quite ok but jerky
+  //(2.5,0.002,15);   better but still jerky
+  //(0.8,0.0005,5); somewhat better but not satisfactory
+  // (0.8,0.0004,8); best so far, may be a starting point for auto-tuning
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -59,13 +65,67 @@ int main()
           */
           
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " max_error: " << pid.TotalError()<< std::endl;
+
+          /*
+          # Make this tolerance bigger if you are timing out!
+          def twiddle(tol=0.2): 
+          # Don't forget to call `make_robot` before every call of `run`!
+          p = [0, 0, 0]
+          dp = [1, 1, 1]
+          robot = make_robot()
+          x_trajectory, y_trajectory, best_err = run(robot, p)
+          # TODO: twiddle loop here
+          x_trajectory, y_trajectory, best_err=run(robot,p)
+          while sum(dp) >tol:
+          for i in range(len(p)):
+            p[i] += dp[i]
+            robot = make_robot()
+            x_trajectory, y_trajectory, err=run(robot,p)
+            if err< best_err:
+              best_err=err
+              dp[i]*=1.1
+            else:
+              p[i]-=2*dp[i]
+              robot = make_robot()
+              x_trajectory, y_trajectory, new_err=run(robot,p)
+              if new_err< best_err:
+                best_err=new_err
+                dp[i]*=1.1
+              else:
+                p[i]+=dp[i]
+                dp[i]*=0.9
+    
+                return p, best_err
+
+
+
+          */
+
+
+          //double steer_value_deg = 10.0;
+          //steer_value =steer_value_deg*3.14/180.0;
+          
+
+          pid.UpdateError(cte);
+          steer_value = -pid.p_error * pid.Kp  - pid.i_error * pid.Ki - pid.d_error * pid.Kd;
+          
+          double  max_steering_angle = 1.0;
+          if (steer_value > max_steering_angle){
+            steer_value = max_steering_angle;
+          }
+          if (steer_value < -max_steering_angle) {
+            steer_value = -max_steering_angle;
+          }
+
+         
+          speed=3.0;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // ULI std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
