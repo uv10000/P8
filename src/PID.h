@@ -43,6 +43,10 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+  
+  
+  void Twiddlestep(double *p, double *dp, double &best_err, double err);
+
 };
 
 #endif /* PID_H */
