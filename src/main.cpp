@@ -58,7 +58,7 @@ int main()
   //(0.12,0.0054,2.3) quite jerky but staying away from trouble, submittable
 
   
-  // Here come a few global Variables, some are relevant for my unfinished online
+  // Here come a few global variables, some are only relevant for my unfinished online
   // implementation Twiddle. They should go into the class "PID" eventually.
   int counter=0;  // counting steps between rounds of Twiddle (one every say 500 steps)
   double p[3] = {pid.Kp, pid.Ki, pid.Kd};  // Helper Variable for online-Twiddle
