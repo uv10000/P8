@@ -35,12 +35,12 @@ void PID::UpdateError(double cte) {
         */
     p_error =  cte;
     i_error +=  cte;
-    double antiwindup=100.0;
-    i_error= fmax(-antiwindup,i_error); i_error=fmin(antiwindup,i_error); // saturate to one
+    double antiwindup=100.0;  // another anti-windup for limiting I-Integral 
+    i_error= fmax(-antiwindup,i_error); i_error=fmin(antiwindup,i_error); 
+    // saturate to "antiwindup"
     d_error = cte -prev_cte;
-    sum_of_squared_errors = cte*cte + sum_of_squared_errors*0.95;
+    sum_of_squared_errors = cte*cte + sum_of_squared_errors*0.95; // moving average!
     prev_cte=cte;
-
 }
 
 double PID::TotalError() {
@@ -48,40 +48,9 @@ double PID::TotalError() {
 }
 
 void PID::Twiddlestep(double *p, double *dp, double &best_err, double err){
-
+/*
+* Unfinished, "hide" the implementation and lots of global variable
+* of the online "Twiddle" from the main. see writeup
+*/
 std::cout << "P[0]" << p[0] << std::endl;
 }
-/*
-          # Make this tolerance bigger if you are timing out!
-          def twiddle(tol=0.2): 
-          # Don't forget to call `make_robot` before every call of `run`!
-          p = [0, 0, 0]
-          dp = [1, 1, 1]
-          robot = make_robot()
-          x_trajectory, y_trajectory, best_err = run(robot, p)
-          # TODO: twiddle loop here
-          x_trajectory, y_trajectory, best_err=run(robot,p)
-          while sum(dp) >tol:
-          for i in range(len(p)):
-            p[i] += dp[i]
-            robot = make_robot()
-            x_trajectory, y_trajectory, err=run(robot,p)
-            if err< best_err:
-              best_err=err
-              dp[i]*=1.1
-            else:
-              p[i]-=2*dp[i]
-              robot = make_robot()
-              x_trajectory, y_trajectory, new_err=run(robot,p)
-              if new_err< best_err:
-                best_err=new_err
-                dp[i]*=1.1
-              else:
-                p[i]+=dp[i]
-                dp[i]*=0.9
-    
-                return p, best_err
-
-
-
-          */

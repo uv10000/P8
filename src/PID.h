@@ -9,7 +9,7 @@ public:
   double p_error;
   double i_error;
   double d_error;
-  double sum_of_squared_errors;
+  double sum_of_squared_errors;  // will be a moving average to prevent wind-up
   double prev_cte;
 
   /*
@@ -44,7 +44,10 @@ public:
   */
   double TotalError();
   
-  
+  /*
+  * Unfinished, "hide" the implementation and lots of global variable
+  * of the online "Twiddle" from the main. see writeup
+  */
   void Twiddlestep(double *p, double *dp, double &best_err, double err);
 
 };

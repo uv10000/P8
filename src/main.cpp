@@ -33,35 +33,43 @@ int main()
   uWS::Hub h;
   PID pid;
   // TODO: Initialize the pid variable.
-  pid.Init(0.12,0.0027*2,2.3);  // 0.05 // (0.04,0.0001,0.1)//(0.05,0.00005,0.2)//}
-  //(0.07,0.00005,0.3); (0.08,0.00003,0.5); (0.1,0.00002,0.5); (0.1,0.00002,0.7)
-  //(0.2,0.0005,4); (0.8,0.0005,8);
+  pid.Init(0.12,0.0054,2.3);  
+  // LONG HISTORY OF HAND-TUNING ATTEMPTS, final values are in the last two rows
+  //(0.04,0.0001,0.1)
+  //(0.05,0.00005,0.2)
+  //(0.07,0.00005,0.3)
+  //(0.08,0.00003,0.5)
+  //(0.1,0.00002,0.5)
+  //(0.1,0.00002,0.7)
+  //(0.2,0.0005,4);
+  //(0.8,0.0005,8);
   //(1.2,0.0005,16); quite ok but jerky
-  //(2.5,0.002,15);   better but still jerky
+  //(2.5,0.002,15); better but still jerky
   //(0.8,0.0005,5); somewhat better but not satisfactory
-  // (0.8,0.0004,8); best so far, may be a starting point for auto-tuning
-  //  pid.Init(0.1,0.0004,1); better 
+  //(0.8,0.0004,8); best so far, may be a starting point for auto-tuning
+  //(0.1,0.0004,1); better 
   //(0.05,0.0004,1); quite ok 
-  //(0.11,0.005,0.0); also ok but not quite
-
+  //(0.11,0.005,0.0); also ok but not quite there
   //(0.15,0.001,0.45); acceptable with anti windup = 10
-  // quite ok wit antiwindup 100 (0.1,0.0007,0.8); 
+  //(0.1,0.0007,0.8); quite ok wit antiwindup 100 
   //(0.1,0.0014,0.8); even better
-  // (0.1,0.002,1.15); a bit jerky but staying away from the curbs
-  // this can be submitted (0.11,0.0023,1.5);
-  // (0.12,0.0027*2,2.3) terribly kinky but staying away from trouble, submittable
+  //(0.1,0.002,1.15); a bit jerky but staying away from the curbs
+  //(0.11,0.0023,1.5);this can be submitted
+  //(0.12,0.0054,2.3) quite jerky but staying away from trouble, submittable
 
+  
+  // Here come a few global Variables, some are relevant for my unfinished online
+  // implementation Twiddle. They should go into the class "PID" eventually.
+  int counter=0;  // counting steps between rounds of Twiddle (one every say 500 steps)
+  double p[3] = {pid.Kp, pid.Ki, pid.Kd};  // Helper Variable for online-Twiddle
+  double dp[3] = {0.2, 0.0002, 2};// {1,1,1}; // Helper Variable for online-Twiddle
+  double best_err= 1e10;  // Helper Variable for online-Twiddle
+  double err_plus[3]= {0, 0, 0};  // Helper Variable for online-Twiddle, partial derivatives
+  double err_minus[3]= {0, 0, 0}; // Helper Variable for online-Twiddle, partial derivatives
+  double old_err=0; // Helper Variable for online-Twiddle, for computing partial derivatives
+  int myindex=0;  // counter indexing one of 8 states in a statemachine used for online Twiddle
 
-  int counter=0;
-  double p[3] = {pid.Kp, pid.Ki, pid.Kd};
-  double dp[3] = {0.2, 0.0002, 2};// {1,1,1};
-  double best_err= 1e10;
-  double err_plus[3]= {0, 0, 0};
-  double err_minus[3]= {0, 0, 0};
-  double old_err=0;
-  int myindex=0;
-
-
+  // The global variables like e.g. err_plus should be "stowed away" in class PID
   h.onMessage([&pid, &counter,&p, &dp,&best_err,&err_plus,&err_minus,&old_err,&myindex](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -87,15 +95,14 @@ int main()
           
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " averaged sq error: " << pid.TotalError()<< std::endl;
-           std::cout << "I Error: " << pid.i_error << std::endl;
-          
+          std::cout << "I Error: " << pid.i_error << std::endl;
 
-
+          // initial test for setting the steering value, saturation happens below.
           //double steer_value_deg = 10.0;
           //steer_value =steer_value_deg*3.14/180.0;
-          
-          
+        
           /*
+          // UNFINISHED implementation of online-Twiddle, SEE WRITEUP for explanations
           counter=(counter+1)%500;
           if (counter==0) {
             // run another time
@@ -173,10 +180,13 @@ int main()
           }
           */
           
-
+           
           pid.UpdateError(cte);
+
+          // setting the steering value
           steer_value = -pid.p_error * pid.Kp  - pid.i_error * pid.Ki - pid.d_error * pid.Kd;
           
+          // saturating the steering value
           double  max_steering_angle = 1.0;
           if (steer_value > max_steering_angle){
             steer_value = max_steering_angle;
@@ -185,12 +195,11 @@ int main()
             steer_value = -max_steering_angle;
           }
 
-         
-          //speed=2.0;
+          //speed=2.0; // no speed controller implemented, setting throttle open loop
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;//0.3;
+          msgJson["throttle"] = 0.3;// setting throttle open loop
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           // ULI std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
